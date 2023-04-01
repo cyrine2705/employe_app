@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:flutter/material.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:get/get.dart';
@@ -6,6 +8,8 @@ import 'package:app_employe/overview.dart';
 import 'package:app_employe/widgets/button.dart';
 import 'package:app_employe/widgets/input.dart';
 import 'package:app_employe/widgets/label.dart';
+import 'package:app_employe/service/userservice.dart';
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 
 class Login extends StatefulWidget {
   const Login({Key? key}) : super(key: key);
@@ -15,6 +19,7 @@ class Login extends StatefulWidget {
 }
 
 class _LoginState extends State<Login> {
+  final storage = FlutterSecureStorage();
   final TextEditingController userController = TextEditingController();
   final TextEditingController pwdController = TextEditingController();
   final TextEditingController _textFieldController = TextEditingController();
@@ -178,22 +183,35 @@ class _LoginState extends State<Login> {
     );
   }
 
-  login() {
-    String user = "nedra@gmail.com";
-    String pwd = "ghdamsi";
-    if (userController.text.isEmpty || pwdController.text.isEmpty) {
-      Get.snackbar('Error', 'Please enter your email and password',
-          snackPosition: SnackPosition.BOTTOM);
-    } else if (userController.text == user && pwdController.text == pwd) {
-      userController.clear();
-      pwdController.clear();
-      Get.to(() => Home());
-    } else if (!GetUtils.isEmail(userController.text)) {
-      Get.snackbar('Error', 'Incorrect email ',
-          snackPosition: SnackPosition.BOTTOM);
-    } else {
-      Get.snackbar('Error', 'Incorrect email or password ',
-          snackPosition: SnackPosition.BOTTOM);
+  login() async {
+    try {
+      final loginResponse = await UserService.login(
+          this.userController.text, this.pwdController.text);
+      print(loginResponse);
+      final String token = loginResponse.toString();
+      print(token);
+
+      await storage.write(key: 'token', value: token);
+    } catch (e) {
+      print(userController);
+      print(pwdController);
+      print(e);
+      showDialog(
+          context: context,
+          builder: (context) {
+            return AlertDialog(
+              title: Text("Error"),
+              content: Text(e.toString()),
+              actions: [
+                ElevatedButton(
+                    onPressed: Navigator.of(context).pop,
+                    child: Text("OK"),
+                    style: ButtonStyle(
+                        backgroundColor: MaterialStateProperty.all(
+                            Color.fromARGB(255, 8, 221, 193)))),
+              ],
+            );
+          });
     }
   }
 }
